@@ -457,3 +457,23 @@ Abschnitt **Langzeitarchiv auf der microSD**.
 - Verlauf fuer **vor** der Inbetriebnahme (Altbestand ab 2014) nur ueber einen
   PostgreSQL-Dump von Tankerkoenig auf Anfrage (siehe `docs/datenquelle.md`).
 - Kein OTA - Updates laufen ueber USB. Bei Bedarf Partitionstabelle aendern.
+
+## Lizenz
+
+Der Quelltext steht unter der **PolyForm Noncommercial License 1.0.0**
+(vollstaendiger Text in `LICENSE`, Herkunft:
+<https://polyformproject.org/licenses/noncommercial/1.0.0>). Kernaussagen:
+
+- **Erlaubt:** private und Hobby-Nutzung, Studium, Forschung, Versuche,
+  Aenderungen und Weitergabe - auch durch gemeinnuetzige Organisationen,
+  Bildungseinrichtungen, Behoerden sowie Organisationen fuer Gesundheit,
+  oeffentliche Sicherheit oder Umweltschutz.
+- **Nicht erlaubt:** jede Verwendung zu **gewerblichen Zwecken**.
+- Bei Weitergabe muss dieser Lizenztext (oder der Verweis darauf) mitgegeben
+  werden.
+
+Required Notice: Copyright (c) 2026 softrider70
+
+Davon getrennt gilt fuer die **Preisdaten** die Lizenz der Datenquelle
+(**CC BY 4.0**, siehe Abschnitt **Datenquelle**) - die dort geforderte
+Namensnennung bleibt Pflicht und steht in der Startmeldung des Geraets.
