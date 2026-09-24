@@ -1,4 +1,14 @@
 {
     "idf.currentSetup": "C:\\esp\\v6.0\\esp-idf",
-    "idf.port": "COM4"
+    "idf.port": "COM4",
+
+    // IntelliSense an den echten Build haengen. Ohne diese Zeilen kennt der
+    // Editor die Include-Pfade nicht und meldet in jeder Datei "Quelle kann
+    // nicht geoeffnet werden" (z. B. stdbool.h) - der Build selbst ist davon
+    // nicht betroffen.
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.compilerPath": "${env:USERPROFILE}/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20250929/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc.exe",
+    "C_Cpp.default.intelliSenseMode": "windows-clang-x64",
+    "C_Cpp.default.cStandard": "gnu23",
+    "C_Cpp.default.cppStandard": "gnu++23"
 }
