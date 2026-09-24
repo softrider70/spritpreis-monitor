@@ -1,0 +1,12 @@
+# Build-Artefakte
+build/
+sdkconfig
+sdkconfig.old
+*.log
+
+# Build-Zaehler (lokaler Zustand)
+.build_number
+.last_version
+
+# Abrufe vom Geraet (enthalten Tankstellenname, WLAN-Kennungen)
+vom_geraet/

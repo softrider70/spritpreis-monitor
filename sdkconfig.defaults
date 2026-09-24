@@ -1,0 +1,56 @@
+# Spritpreis-Monitor - ESP32 (klassisch, WROOM-32, 4MB Flash, KEIN PSRAM)
+# Hardware: CYD ESP32-2432S028R (2,8"-Display + XPT2046-Touch).
+
+CONFIG_IDF_TARGET="esp32"
+
+# Dual-Core
+CONFIG_FREERTOS_UNICORE=n
+
+# Kein PSRAM - Memory-bewusst programmieren
+CONFIG_SPIRAM=n
+
+# CPU Takt
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# Flash: 4MB
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Eigene Partitionstabelle (grosses NVS fuer den Preisverlauf, siehe partitions.csv)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Console: UART (Standard-USB-TTL, wird auch fuer die Kommando-Konsole genutzt)
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_CONSOLE_UART_DEFAULT=y
+
+# TLS: eingebautes Wurzelzertifikat-Bundle (API nutzt Let's Encrypt)
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
+
+# Watchdogs: INT-WDT an, Task-WDT aus
+CONFIG_ESP_TASK_WDT_INIT=n
+CONFIG_ESP_TASK_WDT=n
+CONFIG_ESP_INT_WDT=y
+
+# FreeRTOS
+CONFIG_FREERTOS_HZ=100
+CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=1536
+CONFIG_ESP_IPC_TASK_STACK_SIZE=2048
+
+# Stromsparen: automatischer Light-Sleep, wenn die CPU nichts zu tun hat
+# (power.c konfiguriert zusaetzlich die CPU-Frequenz und die Wakeup-Quellen).
+CONFIG_PM_ENABLE=y
+CONFIG_PM_DFS_INIT_AUTO=y
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
+CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID=y
+
+# Logging
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_MAXIMUM_LEVEL=4
+
+# Compiler-Optimierung: -Os (Groessenoptimierung) - verhindert IRAM-Ueberlauf
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
