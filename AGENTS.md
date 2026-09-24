@@ -77,6 +77,10 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   nutzbar - kein Pull-up, der Pegel flattert (siehe oben).
   Ein **Tipp wird erst beim Loslassen** gemeldet - sonst wuerde jedes
   Verschieben zusaetzlich einen Tipp ausloesen.
+  **Der Touch weckt die Anzeige nicht:** Ereignisse gehen nur nach oben,
+  solange das Bild sichtbar ist (`power_display_on()`). Aufgeweckt wird
+  ausschliesslich per BOOT-Taste - hardware-seitig, damit dafuer kein
+  Tastendruck im Programm ausgewertet werden muss.
 - `main/settings.c` haelt Tankstellen-ID und API-Key im NVS (`spritcfg`),
   `main/wifi.c` die WLAN-Daten im selben Namespace.
 

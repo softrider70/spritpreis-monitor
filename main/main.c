@@ -61,24 +61,24 @@ static void anzeige_zeichnen(void)
 static void on_touch_tap(int x, int y, void *arg)
 {
     (void)arg;
-    ui_touch_tap(x, y);
-    if (!power_activity()) {
-        anzeige_zeichnen();
+
+    /* Der Touch weckt die Anzeige NICHT - diese Auswertung gehoert nicht ins
+     * Programm. Ein Tipp wird nur bedient, wenn das Bild sichtbar ist;
+     * geweckt wird ueber die BOOT-Taste (Hardware-Wecker in power.c). */
+    if (!power_display_on()) {
+        return;
     }
+    ui_touch_tap(x, y);
+    anzeige_zeichnen();
 }
 
 static void on_touch_move(int x, int y, bool pressed, void *arg)
 {
     (void)arg;
 
-    /* Die Beruehrung weckt die Anzeige - und zwar sofort beim Aufsetzen, nicht
-     * erst beim Loslassen. Sonst muesste man den Finger liegen lassen, bis
-     * etwas zu sehen ist. */
-    if (pressed && power_activity()) {
-        return;                       /* wurde gerade geweckt - Bild steht schon */
-    }
+    /* Wie beim Tippen: ohne sichtbares Bild keine Bedienung und kein Wecken. */
     if (!power_display_on()) {
-        return;                       /* nichts zu sehen, nichts zu zeichnen */
+        return;
     }
 
     const bool verschoben = ui_touch_move(x, y, pressed);

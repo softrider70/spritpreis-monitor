@@ -48,9 +48,9 @@ static const char *TAG = "touch";
  * Ruhezustand auf low - IO36 ist ein reiner Eingang ohne internen Pull-up,
  * der Ausgang des XPT2046 haengt in der Luft. Ein Interrupt kann damit nicht
  * ausgeloest werden, und ein Wecker waere er auch nicht.
- * Deshalb wird der Touch immer im Takt abgefragt. Bei ausgeschalteter Anzeige
- * ist der Takt ein Kompromiss: kurz genug, dass ein Tipp nicht zwischen zwei
- * Abfragen verschwindet, lang genug fuer den Stromverbrauch. */
+ * Deshalb wird der Touch immer im Takt abgefragt. Gemeldet werden die
+ * Ereignisse aber nur bei eingeschalteter Anzeige - der Touch weckt das
+ * Display also nicht, sondern bedient nur, was sichtbar ist. */
 #define TOUCH_TAKT_AN_MS    30
 #define TOUCH_TAKT_AUS_MS   50      /* am Geraet: 100 ms verpasste kurze Tipps */
 
@@ -164,6 +164,12 @@ static void touch_task(void *arg)
     bool pressed = false;
 
     for (;;) {
+        /* Der Touch bedient nur, was gerade sichtbar ist. Ist die Anzeige
+         * aus, wird zwar weitergelesen (der Chip braucht keine Anlaufzeit),
+         * aber es geht kein Ereignis nach oben - damit weckt der Touch die
+         * Anzeige nicht mehr. Geweckt wird ueber die BOOT-Taste (power.c). */
+        const bool an = power_display_on();
+
         uint16_t z1 = read_channel(XPT_CMD_Z1);
         uint16_t z2 = read_channel(XPT_CMD_Z2);
         int pressure = (z1 > 0) ? ((int)z1 - (int)z2 + 4095) : 0;
@@ -198,22 +204,22 @@ static void touch_task(void *arg)
             s_last_x = dx;
             s_last_y = dy;
             /* Bewegungsereignis, solange gedrueckt wird (fuer Ziehen/Wischen) */
-            if (s_press_cb) s_press_cb(dx, dy, true, s_cb_arg);
+            if (an && s_press_cb) s_press_cb(dx, dy, true, s_cb_arg);
         } else if (pressed) {
             pressed = false;
             /* Ein Tipp wird erst beim Loslassen gemeldet - vorher ist nicht
              * zu wissen, ob daraus ein Ziehen wird. Sonst wuerde jedes
              * Verschieben zusaetzlich einen Tap ausloesen. */
             uint32_t dauer_ms = (uint32_t)((xTaskGetTickCount() - s_down_tick) * portTICK_PERIOD_MS);
-            if (s_weg < TOUCH_TAP_WEG && dauer_ms < TOUCH_TAP_MAX_MS) {
+            if (an && s_weg < TOUCH_TAP_WEG && dauer_ms < TOUCH_TAP_MAX_MS) {
                 if (s_cb) s_cb(s_last_x, s_last_y, s_cb_arg);
             }
-            if (s_press_cb) s_press_cb(s_last_x, s_last_y, false, s_cb_arg);
+            if (an && s_press_cb) s_press_cb(s_last_x, s_last_y, false, s_cb_arg);
         }
 
         /* Im ausgeschalteten Zustand wird seltener abgefragt (Strom), aber
          * nicht so selten, dass ein kurzer Tipp verschwindet. */
-        int takt = power_display_on() ? TOUCH_TAKT_AN_MS : TOUCH_TAKT_AUS_MS;
+        int takt = an ? TOUCH_TAKT_AN_MS : TOUCH_TAKT_AUS_MS;
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(takt));
     }
 }
