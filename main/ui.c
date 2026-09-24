@@ -704,10 +704,18 @@ void ui_touch_tap(int x, int y)
 
 bool ui_touch_move(int x, int y, bool pressed)
 {
-    static int last_x = 0;
+    static int last_x = -1;
 
     if (!pressed) {
         s_drag_accum = 0;
+        last_x = -1;                     /* naechste Beruehrung faengt neu an */
+        return false;
+    }
+    if (last_x < 0) {
+        /* Erster Wert dieser Beruehrung ist der Bezugspunkt - ohne ihn wuerde
+         * die Strecke seit der letzten Beruehrung als Ziehweg gelten und das
+         * Diagramm springen (z. B. direkt nach dem Aufwecken). */
+        last_x = x;
         return false;
     }
     if (y < 84 || y > 210) {

@@ -57,14 +57,23 @@ static void anzeige_zeichnen(void)
  *
  * Wichtig: Erst den Zustand aendern, dann wecken. power_activity() zeichnet
  * beim Wecken selbst - und zwar genau diesen neuen Zustand. Wer danach noch
- * einmal zeichnet, sieht den zweiten Bildaufbau als Blitzen. */
+ * einmal zeichnet, sieht den zweiten Bildaufbau als Blitzen.
+ *
+ * Der Druck, der die Anzeige aufweckt, ist NUR zum Aufwecken da: Er darf
+ * keine Funktion im Hauptprogramm ausloesen (sonst schaltet derselbe Tipp
+ * gleich das Zeitfenster um oder blaettert im Diagramm). s_touch_weckte
+ * merkt sich das bis zum Loslassen; erst der naechste Druck bedient wieder. */
+static bool s_touch_weckte = false;
+
 static void on_touch_tap(int x, int y, void *arg)
 {
     (void)arg;
 
-    /* Der Touch weckt die Anzeige NICHT - diese Auswertung gehoert nicht ins
-     * Programm. Ein Tipp wird nur bedient, wenn das Bild sichtbar ist;
-     * geweckt wird ueber die BOOT-Taste (Hardware-Wecker in power.c). */
+    if (s_touch_weckte) {
+        /* Ende der Weckberuehrung - nichts umschalten, nichts blaettern. */
+        s_touch_weckte = false;
+        return;
+    }
     if (!power_display_on()) {
         return;
     }
@@ -76,9 +85,24 @@ static void on_touch_move(int x, int y, bool pressed, void *arg)
 {
     (void)arg;
 
-    /* Wie beim Tippen: ohne sichtbares Bild keine Bedienung und kein Wecken. */
-    if (!power_display_on()) {
+    if (s_touch_weckte) {
+        /* Diese Beruehrung hat nur geweckt - sie bedient noch nichts. */
+        if (!pressed) {
+            s_touch_weckte = false;
+        }
         return;
+    }
+
+    if (pressed && !power_display_on()) {
+        /* Aufsetzen bei ausgeschalteter Anzeige: weckt nur. Das Bild zeichnet
+         * power_activity() selbst ueber den Wake-Callback. */
+        power_activity();
+        s_touch_weckte = true;
+        return;
+    }
+
+    if (!power_display_on()) {
+        return;                       /* nichts zu sehen, nichts zu bedienen */
     }
 
     const bool verschoben = ui_touch_move(x, y, pressed);

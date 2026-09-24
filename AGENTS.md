@@ -77,10 +77,12 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   nutzbar - kein Pull-up, der Pegel flattert (siehe oben).
   Ein **Tipp wird erst beim Loslassen** gemeldet - sonst wuerde jedes
   Verschieben zusaetzlich einen Tipp ausloesen.
-  **Der Touch weckt die Anzeige nicht:** Ereignisse gehen nur nach oben,
-  solange das Bild sichtbar ist (`power_display_on()`). Aufgeweckt wird
-  ausschliesslich per BOOT-Taste - hardware-seitig, damit dafuer kein
-  Tastendruck im Programm ausgewertet werden muss.
+  **Der Weckdruck bedient nichts:** Ein Druck bei ausgeschalteter Anzeige
+  weckt nur (schaltet den Stromsparmodus aus, Bild kommt ueber den
+  Wake-Callback) und geht **nicht** ans Hauptprogramm - erst der naechste
+  Druck loest eine Funktion aus (`s_touch_weckte` in `main.c`). Sonst wuerde
+  derselbe Tipp gleich das Zeitfenster umschalten oder blaettern.
+  Zusaetzlich weckt die BOOT-Taste per Hardware (ext0).
 - `main/settings.c` haelt Tankstellen-ID und API-Key im NVS (`spritcfg`),
   `main/wifi.c` die WLAN-Daten im selben Namespace.
 
