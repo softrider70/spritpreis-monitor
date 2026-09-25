@@ -60,9 +60,19 @@ static bool s_verlauf_geladen = false;
 static bool s_sntp_gestartet = false;
 static bool s_uhr_gemeldet = false;
 
+/* Wann die zuletzt angezeigten Werte geholt wurden. Die Werte selbst bleiben
+ * bei einer fehlgeschlagenen Abfrage stehen - dieses Datum aber nicht, sonst
+ * wuerde die Anzeige alte Daten als frisch ausgeben. */
+static volatile time_t s_messung_zeit = 0;
+
 const fuel_prices_t *fuel_poll_last(void)
 {
     return &s_last;
+}
+
+time_t fuel_poll_data_time(void)
+{
+    return s_messung_zeit;
 }
 
 bool fuel_poll_net_ok(void)
@@ -199,6 +209,7 @@ static void poll_task(void *arg)
                         }
                     }
                     s_last = p;
+                    s_messung_zeit = time(NULL);   /* Zeitpunkt dieser Messung */
                     price_log_add(time(NULL), &p);
                     sd_archive_add(time(NULL), &p);   /* Langzeitarchiv auf der Karte */
                     if (geaendert) {

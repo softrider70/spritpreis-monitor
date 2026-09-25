@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "display.h"
+#include "fuel_poll.h"
 #include "power.h"
 #include "price_log.h"
 #include "sd_archive.h"
@@ -471,6 +472,20 @@ static void draw_chart(void)
 
     display_draw_rect(x0, y0, breite, hoehe, C_GRID);
 
+    /* Ist-Marker: zeigt, wo der zuletzt gemessene Preis liegt. Er sitzt
+     * bewusst am rechten Rand neben der Preisachse und nicht auf der Kurve -
+     * so bleibt er auch dann sichtbar, wenn das Diagramm geblaettert wurde
+     * und der neueste Wert gar nicht im Bild ist. */
+    const fuel_prices_t *ist_p = fuel_poll_last();
+    const int ist = (ist_p ? ist_p->price_milli[s_fuel] : 0);
+    if (ist > 0) {
+        int yv = y1 - (int)((int64_t)(ist - vmin) * hoehe / spanne);
+        if (yv < y0) yv = y0;
+        if (yv > y1) yv = y1;
+        display_draw_filled_rect(x1 - 13, yv, 7, 1, C_ACCENT);   /* Zeiger */
+        display_draw_filled_rect(x1 - 5, yv - 1, 3, 3, C_ACCENT);  /* Punkt */
+    }
+
     ESP_LOGD(TAG, "Diagramm: %d Punkte, Fenster %d..%d, Bereich %d..%d",
              (int)n_last, start, ende - 1, vmin, vmax);
 }
@@ -557,6 +572,10 @@ static uint32_t bild_signatur(const fuel_prices_t *p, bool zeit_ok, bool netz_ok
     h = h * 31u + (uint32_t)s_fuel;
     h = h * 31u + (uint32_t)s_range;
     h = h * 31u + (uint32_t)s_offset;
+    /* Der Zeitpunkt der letzten Messung gehoert dazu: sonst bliebe "Messung
+     * 22:40" stehen, obwohl laengst neue Werte da sind. Geaendert wird das
+     * Bild dadurch nur einmal je Abfrage (alle 5 Minuten). */
+    h = h * 31u + (uint32_t)(fuel_poll_data_time() / 60);
     return h;
 }
 
@@ -637,6 +656,21 @@ void ui_render(const fuel_prices_t *p, bool zeit_ok, bool netz_ok)
              sd_archive_ready() ? "ok" : "--");
     display_draw_filled_rect(0, 10, TFT_WIDTH - 40, 10, C_BG);
     display_draw_text(4, 12, status, C_TEXT_DIM, C_BG);
+
+    /* Zeitpunkt der letzten Messung. Zusammen mit der Uhr rechts daneben sagt
+     * er, wie frisch die Werte sind - gruen, solange die Messung im laufenden
+     * Takt (5 min) liegt. */
+    const time_t messung = fuel_poll_data_time();
+    if (messung > 0 && zeit_ok) {
+        struct tm mt;
+        localtime_r(&messung, &mt);
+        char letzte[24];
+        strftime(letzte, sizeof(letzte), "Messung %H:%M", &mt);
+        const bool frisch = (time(NULL) - messung) <= 6 * 60;
+        display_draw_text(TFT_WIDTH - 38 - (int)strlen(letzte) * 6 - 6, 12,
+                          letzte, frisch ? C_GOOD : C_TEXT_DIM, C_BG);
+    }
+
     display_draw_text(TFT_WIDTH - 38, 12, zeit, C_TEXT, C_BG);
 
     /* Grosser Preis, links daneben das Tief, rechts das Hoch des sichtbaren

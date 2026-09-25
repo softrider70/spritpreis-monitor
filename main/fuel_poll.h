@@ -5,6 +5,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <time.h>
 #include "fuel_api.h"
 
 /* Startet den Poll-Task (Core 0). Abfrage alle FUEL_POLL_INTERVAL_S Sekunden. */
@@ -15,6 +16,10 @@ void fuel_poll_now(void);
 
 /* Letzte gueltige Werte (bleiben stehen, wenn eine Abfrage fehlschlaegt). */
 const fuel_prices_t *fuel_poll_last(void);
+
+/* Zeitpunkt der letzten erfolgreichen Messung (0 = noch keine). Damit laesst
+ * sich auf der Anzeige zeigen, wie frisch die Werte sind. */
+time_t fuel_poll_data_time(void);
 
 /* true, wenn die letzte Abfrage technisch erfolgreich war. */
 bool fuel_poll_net_ok(void);
