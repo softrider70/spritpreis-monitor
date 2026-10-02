@@ -57,13 +57,17 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   `ui_render` nur bei geaenderter Signatur (Preis, Minute, Fenster, Offset).
 - `main/power.c` haelt ausserdem das **Lademodul wach**: Manche Module
   (Powerbank-Bauart) schalten ihren Ausgang ab, wenn laenger zu wenig Strom
-  fliesst. Deshalb zieht im Stromsparmodus alle `POWER_KEEPALIVE_S` (Vorgabe
-  600 s = 10 min) kurz eine Zusatzlast an IO22 (ueber Transistor, Impuls
-  `POWER_KEEPALIVE_MS` = 200 ms). Der Rhythmus laeuft **unabhaengig** vom
-  Anzeigezustand - haengt der Impuls am Ausschalten der Anzeige, kommt er bei
-  haeufigen Preisaenderungen nie zustande (so war es: 0 Impulse im Log).
-  Einstellen ohne Neubauen:
-  `keepalive <sekunden> [millisekunden]`; dauerhaft gilt `config.h`.
+  fliesst. Als Last dient ein **WLAN-Scan** (`wifi_lastimpuls`): alle
+  `POWER_KEEPALIVE_S` (Vorgabe 600 s = 10 min) rund 2-3 s ueber alle Kanaele.
+  Eine Preisabfrage allein reicht dafuer **nicht** (1-2 s, als Mittelwert
+  ueber 5 Minuten nur wenige mA - deshalb schaltete das Modul trotz der
+  Abfragen ab).
+  Der Rhythmus laeuft **unabhaengig** vom Anzeigezustand - haengt der Impuls
+  am Ausschalten der Anzeige, kommt er bei haeufigen Preisaenderungen nie
+  zustande (so war es: 0 Impulse im Log).
+  Einstellen ohne Neubauen: `keepalive <sekunden>`; dauerhaft gilt `config.h`.
+  Eine Zusatzlast am Pin ist optional: `POWER_KEEPALIVE_GPIO` auf 22 setzen
+  (Transistor, nicht direkt - ein GPIO darf nur etwa 20 mA treiben).
   Der Abstand muss **kuerzer** sein als das Abschaltfenster des Moduls -
   das ist modulabhaengig und muss am eigenen Geraet gemessen werden.
 - Anzeige ist fest auf **E10** gelegt (`FUEL_DEFAULT_INDEX`); der

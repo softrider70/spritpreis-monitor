@@ -28,6 +28,11 @@ void power_init(void);
  * die Anzeige neu (z. B. ui_render). */
 void power_set_wake_callback(void (*cb)(void));
 
+/* Liefert die Last fuer den Wachhalte-Impuls (siehe POWER_KEEPALIVE_*).
+ * Ohne Zusatzlast am Pin wird hier wifi_lastimpuls gesetzt: ein WLAN-Scan
+ * zieht ohne Zusatzhardware deutlich Strom. Rueckgabe true = Impuls lief. */
+void power_set_lastimpuls_callback(bool (*cb)(void));
+
 /* Ereignis melden: Haltezeit neu starten und die Anzeige einschalten, falls
  * sie aus war. Rueckgabe true = sie wurde geweckt und dabei schon neu
  * gezeichnet - der Aufrufer soll dann NICHT noch einmal zeichnen (sonst

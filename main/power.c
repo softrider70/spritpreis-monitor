@@ -48,6 +48,7 @@ static bool     s_light_sleep = false;     /* Light-Sleep eingerichtet? */
 static bool     s_irq_usable = false;      /* Touch-IRQ als Wecker nutzbar? */
 static int      s_wake_pin = -1;           /* Pin, der den Sleep beendet */
 static void   (*s_wake_cb)(void) = NULL;
+static bool   (*s_lastimpuls_cb)(void) = NULL;   /* Last ueber Funk (WLAN-Scan) */
 static uint32_t s_keepalive_impulse = 0;   /* Anzahl der Lastimpulse */
 static int      s_keepalive_s  = POWER_KEEPALIVE_S;    /* Abstand in Sekunden */
 static int      s_keepalive_ms = POWER_KEEPALIVE_MS;   /* Impulsdauer in ms */
@@ -79,16 +80,32 @@ static void display_ein(void)
     ESP_LOGI(TAG, "Anzeige an nach %d ms", (int)((esp_timer_get_time() - t0) / 1000));
 }
 
-/* Kurz eine Zusatzlast einschalten, damit das Lademodul nicht abschaltet.
- * Ist nichts angeschlossen, kippt nur der Pegel des Pins - das schadet nicht. */
-static void keepalive_impuls(void)
+/* Einen Lastimpuls ausloesen.
+ *
+ * Ohne Zusatzhardware (POWER_KEEPALIVE_GPIO < 0) uebernimmt der Funkverkehr
+ * die Last: ein WLAN-Scan laeuft 2-3 s ueber alle Kanaele und zieht dabei
+ * deutlich Strom. Eine einzelne Preisabfrage wuerde dafuer nicht reichen -
+ * sie dauert nur 1-2 s und liegt als Mittelwert ueber 5 Minuten im
+ * Milliampere-Bereich. */
+static void lastimpuls_ausloesen(void)
 {
+#if POWER_KEEPALIVE_GPIO >= 0
     gpio_set_level(POWER_KEEPALIVE_GPIO, 1);
     vTaskDelay(pdMS_TO_TICKS(s_keepalive_ms));
     gpio_set_level(POWER_KEEPALIVE_GPIO, 0);
     s_keepalive_impulse++;
-    ESP_LOGI(TAG, "Lastimpuls %u (%d ms, Abstand %d s) fuer das Lademodul",
+    ESP_LOGI(TAG, "Lastimpuls %u (Zusatzlast %d ms, Abstand %d s)",
              (unsigned)s_keepalive_impulse, s_keepalive_ms, s_keepalive_s);
+#else
+    if (!s_lastimpuls_cb) {
+        return;
+    }
+    if (s_lastimpuls_cb()) {
+        s_keepalive_impulse++;
+        ESP_LOGI(TAG, "Lastimpuls %u (WLAN-Scan, Abstand %d s)",
+                 (unsigned)s_keepalive_impulse, s_keepalive_s);
+    }
+#endif
 }
 
 /* Prueft die BOOT-Taste und schaltet die Anzeige nach Ablauf der Haltezeit aus. */
@@ -121,9 +138,8 @@ static void power_task(void *arg)
          * Rhythmus gleichmaessig. Die Schleife holt nur auf, wenn der
          * Zeitpunkt weit in der Vergangenheit liegt - sonst kaemen mehrere
          * Impulse direkt hintereinander. */
-        if (POWER_KEEPALIVE_GPIO >= 0 && s_keepalive_s > 0 &&
-            esp_timer_get_time() >= s_keepalive_next_us) {
-            keepalive_impuls();
+        if (s_keepalive_s > 0 && esp_timer_get_time() >= s_keepalive_next_us) {
+            lastimpuls_ausloesen();
             do {
                 s_keepalive_next_us += (int64_t)s_keepalive_s * 1000000;
             } while (esp_timer_get_time() >= s_keepalive_next_us);
@@ -172,6 +188,16 @@ void power_init(void)
         ESP_LOGW(TAG, "Pin IO%d fuer die Zusatzlast nicht nutzbar (%s)",
                  POWER_KEEPALIVE_GPIO, esp_err_to_name(err));
     }
+#else
+    /* Ohne Zusatzlast uebernimmt der WLAN-Scan die Last (Callback in main.c).
+     * Der erste Impuls kommt erst nach einem vollen Abstand - sonst wuerde er
+     * sofort beim Start ausgeloest, wenn das WLAN noch gar nicht laeuft
+     * (am Geraet gesehen: "Lastimpuls nicht moeglich: WLAN ist nicht
+     * gestartet" direkt beim Boot). */
+    s_keepalive_next_us = esp_timer_get_time() +
+                          (int64_t)s_keepalive_s * 1000000;
+    ESP_LOGI(TAG, "Wachhalten: WLAN-Scan alle %d s%s", POWER_KEEPALIVE_S,
+             (POWER_KEEPALIVE_S > 0) ? "" : " (aus)");
 #endif
 
     /* Wakeup-Quelle waehlen.
@@ -255,6 +281,11 @@ void power_set_wake_callback(void (*cb)(void))
     s_wake_cb = cb;
 }
 
+void power_set_lastimpuls_callback(bool (*cb)(void))
+{
+    s_lastimpuls_cb = cb;
+}
+
 bool power_activity(void)
 {
     s_activity++;
@@ -308,14 +339,15 @@ void power_print_status(void)
     printf("BOOT-Taste   : IO%d, Pegel %d\n", POWER_BUTTON_GPIO,
            gpio_get_level(POWER_BUTTON_GPIO));
     if (POWER_KEEPALIVE_GPIO < 0) {
-        printf("Wachhalten   : aus (kein Pin)\n");
+        printf("Wachhalten   : WLAN-Scan alle %d s%s\n", s_keepalive_s,
+               (s_keepalive_s > 0) ? "" : " (aus)");
     } else {
-        printf("Wachhalten   : IO%d, Impuls %d ms alle %d s%s\n",
+        printf("Wachhalten   : Zusatzlast IO%d, %d ms alle %d s%s\n",
                POWER_KEEPALIVE_GPIO, s_keepalive_ms, s_keepalive_s,
                (s_keepalive_s > 0) ? "" : " (aus)");
-        printf("Impulse      : %u seit dem Start\n",
-               (unsigned)s_keepalive_impulse);
     }
+    printf("Impulse      : %u seit dem Start\n",
+           (unsigned)s_keepalive_impulse);
     printf("Ereignisse   : %u seit dem Start\n", (unsigned)s_activity);
 }
 

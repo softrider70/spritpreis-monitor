@@ -30,6 +30,11 @@ void wifi_ensure_connected(void);
  * Anzeige im Log/auf der Konsole. */
 void wifi_scan_print(void);
 
+/* Kurzer Lastimpuls fuer das Lademodul: scannt alle Kanaele (rund 2-3 s) und
+ * erzeugt damit ohne Zusatzhardware deutlich Strom. Die Liste wird nicht
+ * ausgewertet. true = Scan wurde ausgeloest. */
+bool wifi_lastimpuls(void);
+
 /* Gespeicherten Netzwerknamen ("" = keiner). */
 const char *wifi_ssid(void);
 

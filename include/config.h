@@ -194,19 +194,19 @@ enum {
  * Manche Lademodule (weisse Bauart mit 5-V-Ausgang, "Powerbank-Bauart")
  * schalten den Ausgang ab, wenn ueber eine Zeit zu wenig Strom fliesst.
  * Im Stromsparmodus zieht das CYD nur wenige mA - das Modul sieht "keine
- * Last" und schaltet ab. Gegenmittel: in festen Abstaenden kurz eine
- * Zusatzlast einschalten.
+ * Last" und schaltet ab. Gegenmittel: in festen Abstaenden kurz Last ziehen.
  *
- * Die Zusatzlast MUSS ueber einen Transistor geschaltet werden - ein GPIO
- * darf nur etwa 20 mA treiben. Beispiel an CN1 (GND, IO22, IO27, 3,3 V)
- * oder den 5-V-Punkten (S3 bzw. P1 Pin 1):
+ * Als Last dient im Normalfall ein **WLAN-Scan** (wifi_lastimpuls): rund
+ * 2-3 s auf allen Kanaelen, das zieht deutlich Strom und braucht keine
+ * Zusatzhardware. Eine einzelne Preisabfrage reicht dafuer NICHT - sie
+ * dauert nur 1-2 s und liegt als Mittelwert ueber 5 Minuten im
+ * Milliampere-Bereich (genau deshalb schaltet das Modul trotz Abfragen ab).
  *
- *   IO22 -- 1k -- Basis des NPN (z. B. BC547), Emitter an GND
- *   Kollektor -- 100 Ohm -- 3,3 V von CN1   -> etwa 31 mA, 0,1 W
- *   oder      -- 120 Ohm -- 5 V des Moduls  -> etwa 40 mA, 0,2 W
- *   (ein 0,25-W-Widerstand wird dabei warm - besser 2x 240 Ohm parallel)
- *
- * Der Impuls muss nur die Abschaltung verhindern, nicht die Anzeige versorgen.
+ * Wer stattdessen eine Zusatzlast an einen Pin haengen will (Transistor,
+ * NICHT direkt - ein GPIO darf nur etwa 20 mA treiben):
+ *   IO22 -- 1k -- Basis NPN (z. B. BC547), Emitter an GND
+ *   Kollektor -- 100 Ohm -- 3,3 V   -> etwa 31 mA, 0,1 W
+ * Dann POWER_KEEPALIVE_GPIO auf 22 setzen. -1 = WLAN-Scan benutzen.
  *
  * WICHTIG: Der Abstand (x) muss KLEINER sein als das Abschaltfenster des
  * Moduls. Wie lang das ist, haengt vom Modul ab und muss am eigenen Geraet
@@ -216,9 +216,9 @@ enum {
  * Der Konsolenwert gilt nur bis zum Neustart - hat sich ein Wert bewaehrt,
  * gehoert er hierher (0 = aus).
  * ===================================================================== */
-#define POWER_KEEPALIVE_GPIO    22     /* Zusatzlast (IO22 liegt auf CN1/P3 neben GND), -1 = aus */
+#define POWER_KEEPALIVE_GPIO    (-1)   /* -1 = WLAN-Scan als Last (keine Zusatzhardware) */
 #define POWER_KEEPALIVE_S       600    /* Abstand der Impulse in Sekunden (10 min), 0 = aus */
-#define POWER_KEEPALIVE_MS      200    /* Dauer eines Impulses in Millisekunden */
+#define POWER_KEEPALIVE_MS      200    /* Dauer der Zusatzlast am Pin (beim WLAN-Scan ohne Wirkung) */
 
 /* =====================================================================
  * Simulation (sim.c)

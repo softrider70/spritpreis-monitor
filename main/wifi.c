@@ -293,6 +293,28 @@ void wifi_ensure_connected(void)
     esp_wifi_connect();
 }
 
+bool wifi_lastimpuls(void)
+{
+    if (!s_events) {
+        ESP_LOGW(TAG, "Lastimpuls nicht moeglich: WLAN ist nicht gestartet");
+        return false;
+    }
+
+    /* rund 2-3 s hoher Strom auf allen Kanaelen */
+    wifi_scan_config_t scan = { 0 };
+    esp_err_t err = esp_wifi_scan_start(&scan, true);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Lastimpuls (Scan) fehlgeschlagen: %s", esp_err_to_name(err));
+        return false;
+    }
+
+    /* Ohne dieses Auslesen bleibt der Scan-Speicher des Treibers belegt. */
+    uint16_t anzahl = 0;
+    esp_wifi_scan_get_ap_num(&anzahl);
+    ESP_LOGI(TAG, "Lastimpuls: WLAN-Scan, %u Netz(e) gesehen", (unsigned)anzahl);
+    return true;
+}
+
 /* Netze in Reichweite auflisten. Zeigt den Sicherheitsmodus, damit ein
  * abweichender Modus (offen, WEP, nur WPA) als Ursache belegt und nicht
  * geraten werden muss. */

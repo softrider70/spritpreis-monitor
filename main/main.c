@@ -171,8 +171,11 @@ void app_main(void)
         ESP_LOGI(TAG, "%d Wert(e) aus der Konfigurationsdatei uebernommen", uebernommen);
     }
 
-    /* --- Stromsparen: Taster, Wakeup-Pins, Light-Sleep --- */
+    /* --- Stromsparen: Taster, Wakeup-Pins, Light-Sleep, Lademodul --- */
     power_set_wake_callback(on_display_wake);
+    /* Als Wachhalte-Last fuer das Lademodul dient der Funkverkehr
+     * (siehe POWER_KEEPALIVE_* in config.h). */
+    power_set_lastimpuls_callback(wifi_lastimpuls);
     power_init();
 
     console_start();
