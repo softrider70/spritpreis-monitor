@@ -48,6 +48,10 @@ static bool     s_light_sleep = false;     /* Light-Sleep eingerichtet? */
 static bool     s_irq_usable = false;      /* Touch-IRQ als Wecker nutzbar? */
 static int      s_wake_pin = -1;           /* Pin, der den Sleep beendet */
 static void   (*s_wake_cb)(void) = NULL;
+static uint32_t s_keepalive_impulse = 0;   /* Anzahl der Lastimpulse */
+static int      s_keepalive_s  = POWER_KEEPALIVE_S;    /* Abstand in Sekunden */
+static int      s_keepalive_ms = POWER_KEEPALIVE_MS;   /* Impulsdauer in ms */
+static int64_t  s_keepalive_next_us = 0;   /* wann der naechste Impuls faellig ist */
 
 static void display_aus(void)
 {
@@ -57,6 +61,11 @@ static void display_aus(void)
      * zurueck, ohne dass das ganze Bild neu aufgebaut werden muss. */
     display_power(false);                  /* DISPOFF + SLPIN */
     s_on = false;
+    /* Der erste Impuls kommt erst nach einem vollen Abstand: im Moment des
+     * Ausschaltens lief gerade noch die Anzeige, das Modul hat also Last
+     * gesehen. */
+    s_keepalive_next_us = esp_timer_get_time() +
+                          (int64_t)s_keepalive_s * 1000000;
     ESP_LOGI(TAG, "Anzeige aus (Stromsparmodus)");
 }
 
@@ -73,6 +82,18 @@ static void display_ein(void)
     }
     display_backlight(true);
     ESP_LOGI(TAG, "Anzeige an nach %d ms", (int)((esp_timer_get_time() - t0) / 1000));
+}
+
+/* Kurz eine Zusatzlast einschalten, damit das Lademodul nicht abschaltet.
+ * Ist nichts angeschlossen, kippt nur der Pegel des Pins - das schadet nicht. */
+static void keepalive_impuls(void)
+{
+    gpio_set_level(POWER_KEEPALIVE_GPIO, 1);
+    vTaskDelay(pdMS_TO_TICKS(s_keepalive_ms));
+    gpio_set_level(POWER_KEEPALIVE_GPIO, 0);
+    s_keepalive_impulse++;
+    ESP_LOGI(TAG, "Lastimpuls %u (%d ms, Abstand %d s) fuer das Lademodul",
+             (unsigned)s_keepalive_impulse, s_keepalive_ms, s_keepalive_s);
 }
 
 /* Prueft die BOOT-Taste und schaltet die Anzeige nach Ablauf der Haltezeit aus. */
@@ -92,6 +113,17 @@ static void power_task(void *arg)
         if (s_on && esp_timer_get_time() >= s_until_us) {
             display_aus();
         }
+
+        /* Im Stromsparmodus in festen Abstaenden kurz Last ziehen. Nur dann
+         * braucht das Lademodul den Impuls - bei eingeschalteter Anzeige
+         * fliesst ohnehin genug Strom. */
+        if (!s_on && POWER_KEEPALIVE_GPIO >= 0 && s_keepalive_s > 0 &&
+            esp_timer_get_time() >= s_keepalive_next_us) {
+            keepalive_impuls();
+            s_keepalive_next_us = esp_timer_get_time() +
+                                  (int64_t)s_keepalive_s * 1000000;
+        }
+
         vTaskDelay(pdMS_TO_TICKS(POWER_POLL_MS));
     }
 }
@@ -110,6 +142,28 @@ void power_init(void)
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "BOOT-Taste nicht nutzbar (%s)", esp_err_to_name(err));
     }
+
+#if POWER_KEEPALIVE_GPIO >= 0
+    /* Pin fuer die Zusatzlast (Wachhalten des Lademoduls). Pull-down sorgt
+     * dafuer, dass der Transistor sicher sperrt, solange nichts passiert. */
+    gpio_config_t last = {
+        .pin_bit_mask = (1ULL << POWER_KEEPALIVE_GPIO),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    err = gpio_config(&last);
+    if (err == ESP_OK) {
+        gpio_set_level(POWER_KEEPALIVE_GPIO, 0);
+        ESP_LOGI(TAG, "Wachhalten: IO%d, Impuls %d ms alle %d s%s",
+                 POWER_KEEPALIVE_GPIO, POWER_KEEPALIVE_MS, POWER_KEEPALIVE_S,
+                 (POWER_KEEPALIVE_S > 0) ? "" : " (aus)");
+    } else {
+        ESP_LOGW(TAG, "Pin IO%d fuer die Zusatzlast nicht nutzbar (%s)",
+                 POWER_KEEPALIVE_GPIO, esp_err_to_name(err));
+    }
+#endif
 
     /* Wakeup-Quelle waehlen.
      * Der ESP32 kann im Light-Sleep nur EINEN Low-Pegel-Wecker auf einem
@@ -244,5 +298,25 @@ void power_print_status(void)
            s_irq_usable ? "als Wecker nutzbar" : "kein Wecker, siehe Log");
     printf("BOOT-Taste   : IO%d, Pegel %d\n", POWER_BUTTON_GPIO,
            gpio_get_level(POWER_BUTTON_GPIO));
+    if (POWER_KEEPALIVE_GPIO < 0) {
+        printf("Wachhalten   : aus (kein Pin)\n");
+    } else {
+        printf("Wachhalten   : IO%d, Impuls %d ms alle %d s%s\n",
+               POWER_KEEPALIVE_GPIO, s_keepalive_ms, s_keepalive_s,
+               (s_keepalive_s > 0) ? "" : " (aus)");
+        printf("Impulse      : %u seit dem Start\n",
+               (unsigned)s_keepalive_impulse);
+    }
     printf("Ereignisse   : %u seit dem Start\n", (unsigned)s_activity);
+}
+
+void power_keepalive_set(int sekunden, int millisekunden)
+{
+    s_keepalive_s = (sekunden < 0) ? 0 : sekunden;
+    if (millisekunden > 0) {
+        s_keepalive_ms = millisekunden;
+    }
+    /* Neuen Abstand ab jetzt rechnen, damit ein gerade laufender nicht stoert. */
+    s_keepalive_next_us = esp_timer_get_time() +
+                          (int64_t)s_keepalive_s * 1000000;
 }

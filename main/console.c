@@ -394,6 +394,24 @@ static int cmd_power(int argc, char **argv)
     return 0;
 }
 
+/* Wachhalte-Impulse fuer das Lademodul einstellen.
+ * Der Wert liegt nur im Arbeitsspeicher; nach dem Neustart gilt wieder
+ * POWER_KEEPALIVE_S aus config.h. */
+static int cmd_keepalive(int argc, char **argv)
+{
+    if (argc >= 2) {
+        int sekunden = atoi(argv[1]);
+        int ms = (argc >= 3) ? atoi(argv[2]) : 0;    /* 0 = Dauer so lassen */
+        if (sekunden < 0) {
+            printf("Aufruf: keepalive [sekunden] [millisekunden]\n");
+            return 1;
+        }
+        power_keepalive_set(sekunden, ms);
+    }
+    power_print_status();
+    return 0;
+}
+
 static int cmd_time(int argc, char **argv)
 {
     (void)argc; (void)argv;
@@ -591,6 +609,7 @@ esp_err_t console_start(void)
     register_cmd("sd",      "sd [mount]               - SD-Archiv: Zustand / Karte mounten", cmd_sd);
     register_cmd("trend",   "trend [diesel|e5|e10]    - Trendwerte der Pfeile", cmd_trend);
     register_cmd("power",   "power [on|off]           - Stromsparmodus / Anzeige schalten", cmd_power);
+    register_cmd("keepalive", "keepalive [s] [ms]     - Lastimpulse fuer das Lademodul", cmd_keepalive);
     register_cmd("sim",     "sim [on|off|fill [tage]] - Simulationsmodus (Testpreise)", cmd_sim);
     register_cmd("cfg",     "cfg [import|template]    - Zugangsdaten aus SD-Datei", cmd_cfg);
     register_cmd("touch",   "touch calib on|off       - Touch-Rohwerte zum Nachmessen", cmd_touch);

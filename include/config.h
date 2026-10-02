@@ -189,6 +189,38 @@ enum {
 #define POWER_CPU_MAX_MHZ       160
 
 /* =====================================================================
+ * Lademodul wachhalten (Lastimpulse)
+ *
+ * Manche Lademodule (weisse Bauart mit 5-V-Ausgang, "Powerbank-Bauart")
+ * schalten den Ausgang ab, wenn ueber eine Zeit zu wenig Strom fliesst.
+ * Im Stromsparmodus zieht das CYD nur wenige mA - das Modul sieht "keine
+ * Last" und schaltet ab. Gegenmittel: in festen Abstaenden kurz eine
+ * Zusatzlast einschalten.
+ *
+ * Die Zusatzlast MUSS ueber einen Transistor geschaltet werden - ein GPIO
+ * darf nur etwa 20 mA treiben. Beispiel an CN1 (GND, IO22, IO27, 3,3 V)
+ * oder den 5-V-Punkten (S3 bzw. P1 Pin 1):
+ *
+ *   IO22 -- 1k -- Basis des NPN (z. B. BC547), Emitter an GND
+ *   Kollektor -- 100 Ohm -- 3,3 V von CN1   -> etwa 31 mA, 0,1 W
+ *   oder      -- 120 Ohm -- 5 V des Moduls  -> etwa 40 mA, 0,2 W
+ *   (ein 0,25-W-Widerstand wird dabei warm - besser 2x 240 Ohm parallel)
+ *
+ * Der Impuls muss nur die Abschaltung verhindern, nicht die Anzeige versorgen.
+ *
+ * WICHTIG: Der Abstand (x) muss KLEINER sein als das Abschaltfenster des
+ * Moduls. Wie lang das ist, haengt vom Modul ab und muss am eigenen Geraet
+ * ermittelt werden (Stoppuhr: wie lange laeuft es ohne Impuls?). Ausgangswert
+ * hier: 10 Minuten. Im Betrieb laesst sich x ohne Neubauen aendern mit
+ *   keepalive <sekunden> [millisekunden]
+ * Der Konsolenwert gilt nur bis zum Neustart - hat sich ein Wert bewaehrt,
+ * gehoert er hierher (0 = aus).
+ * ===================================================================== */
+#define POWER_KEEPALIVE_GPIO    22     /* Zusatzlast (IO22 liegt auf CN1/P3 neben GND), -1 = aus */
+#define POWER_KEEPALIVE_S       600    /* Abstand der Impulse in Sekunden (10 min), 0 = aus */
+#define POWER_KEEPALIVE_MS      200    /* Dauer eines Impulses in Millisekunden */
+
+/* =====================================================================
  * Simulation (sim.c)
  *
  * Solange kein API-Key vorliegt, laesst sich der Betrieb mit erfundenen,

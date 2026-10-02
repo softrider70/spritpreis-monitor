@@ -45,3 +45,14 @@ void power_print_status(void);
 
 /* Anzeige von Hand schalten (Konsole: power on|off). */
 void power_force(bool on);
+
+/* Wachhalte-Impulse fuer das Lademodul (config.h, POWER_KEEPALIVE_*).
+ *
+ * Manche Lademodule schalten ihren Ausgang ab, wenn die Last zu klein wird.
+ * Im Stromsparmodus zieht deshalb in Abstaenden kurz eine Zusatzlast am Pin
+ * POWER_KEEPALIVE_GPIO. Impulse laufen nur, waehrend die Anzeige aus ist.
+ *
+ * set(): sekunden = 0 schaltet ab, millisekunden <= 0 laesst die Dauer wie
+ * sie ist. Der Wert liegt nur im Arbeitsspeicher - nach dem Neustart gilt
+ * wieder config.h. */
+void power_keepalive_set(int sekunden, int millisekunden);

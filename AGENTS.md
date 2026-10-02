@@ -55,6 +55,15 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   Beim Ausschalten wird das Bild NICHT geloescht: es bleibt im Speicher des
   Panels, damit das Aufwecken ohne Bildaufbau geht. Deshalb zeichnet
   `ui_render` nur bei geaenderter Signatur (Preis, Minute, Fenster, Offset).
+- `main/power.c` haelt ausserdem das **Lademodul wach**: Manche Module
+  (Powerbank-Bauart) schalten ihren Ausgang ab, wenn laenger zu wenig Strom
+  fliesst. Deshalb zieht im Stromsparmodus alle `POWER_KEEPALIVE_S` (Vorgabe
+  600 s = 10 min) kurz eine Zusatzlast an IO22 (ueber Transistor, Impuls
+  `POWER_KEEPALIVE_MS` = 200 ms). Nur bei ausgeschalteter Anzeige - im
+  Wachbetrieb ist die Last ohnehin hoch. Einstellen ohne Neubauen:
+  `keepalive <sekunden> [millisekunden]`; dauerhaft gilt `config.h`.
+  Der Abstand muss **kuerzer** sein als das Abschaltfenster des Moduls -
+  das ist modulabhaengig und muss am eigenen Geraet gemessen werden.
 - Anzeige ist fest auf **E10** gelegt (`FUEL_DEFAULT_INDEX`); der
   Kraftstoff-Schalter am Display ist entfallen, die Konsole kann noch
   umschalten (`fuel`).
@@ -162,6 +171,8 @@ Ohne API-Key: `sim on` und `sim fill 8` - dann kommen die Preise aus
 - [ ] Tankstellen-ID und API-Key der eigenen Tankstelle eintragen (Nutzer)
       -> bis dahin laeuft der Testbetrieb mit `sim on`
 - [ ] Verlauf ein paar Tage laufen lassen und Diagramm ansehen
+- [ ] Impulsabstand `POWER_KEEPALIVE_S` am eigenen Lademodul messen (10 min
+      ist der Ausgangswert) und den brauchbaren Wert in `config.h` eintragen
 
 ## Messwerte am echten Geraet
 
