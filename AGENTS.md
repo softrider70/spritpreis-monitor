@@ -59,8 +59,10 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   (Powerbank-Bauart) schalten ihren Ausgang ab, wenn laenger zu wenig Strom
   fliesst. Deshalb zieht im Stromsparmodus alle `POWER_KEEPALIVE_S` (Vorgabe
   600 s = 10 min) kurz eine Zusatzlast an IO22 (ueber Transistor, Impuls
-  `POWER_KEEPALIVE_MS` = 200 ms). Nur bei ausgeschalteter Anzeige - im
-  Wachbetrieb ist die Last ohnehin hoch. Einstellen ohne Neubauen:
+  `POWER_KEEPALIVE_MS` = 200 ms). Der Rhythmus laeuft **unabhaengig** vom
+  Anzeigezustand - haengt der Impuls am Ausschalten der Anzeige, kommt er bei
+  haeufigen Preisaenderungen nie zustande (so war es: 0 Impulse im Log).
+  Einstellen ohne Neubauen:
   `keepalive <sekunden> [millisekunden]`; dauerhaft gilt `config.h`.
   Der Abstand muss **kuerzer** sein als das Abschaltfenster des Moduls -
   das ist modulabhaengig und muss am eigenen Geraet gemessen werden.

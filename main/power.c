@@ -61,11 +61,6 @@ static void display_aus(void)
      * zurueck, ohne dass das ganze Bild neu aufgebaut werden muss. */
     display_power(false);                  /* DISPOFF + SLPIN */
     s_on = false;
-    /* Der erste Impuls kommt erst nach einem vollen Abstand: im Moment des
-     * Ausschaltens lief gerade noch die Anzeige, das Modul hat also Last
-     * gesehen. */
-    s_keepalive_next_us = esp_timer_get_time() +
-                          (int64_t)s_keepalive_s * 1000000;
     ESP_LOGI(TAG, "Anzeige aus (Stromsparmodus)");
 }
 
@@ -114,14 +109,24 @@ static void power_task(void *arg)
             display_aus();
         }
 
-        /* Im Stromsparmodus in festen Abstaenden kurz Last ziehen. Nur dann
-         * braucht das Lademodul den Impuls - bei eingeschalteter Anzeige
-         * fliesst ohnehin genug Strom. */
-        if (!s_on && POWER_KEEPALIVE_GPIO >= 0 && s_keepalive_s > 0 &&
+        /* Lastimpuls fuer das Lademodul: in festem Rhythmus, unabhaengig
+         * davon, ob die Anzeige gerade an ist.
+         *
+         * Frueher hing der Zaehler am Ausschalten der Anzeige. Dann kam der
+         * Impuls nie zustande, weil die Anzeige (Preisaenderung, Tipp) alle
+         * paar Minuten wieder anging und die Zeit von vorn lief - im Log
+         * standen null Impulse bei 24 Anzeige-Aus-Ereignissen.
+         *
+         * Der Zeitschritt wird ADDIERT, nicht neu gesetzt: so bleibt der
+         * Rhythmus gleichmaessig. Die Schleife holt nur auf, wenn der
+         * Zeitpunkt weit in der Vergangenheit liegt - sonst kaemen mehrere
+         * Impulse direkt hintereinander. */
+        if (POWER_KEEPALIVE_GPIO >= 0 && s_keepalive_s > 0 &&
             esp_timer_get_time() >= s_keepalive_next_us) {
             keepalive_impuls();
-            s_keepalive_next_us = esp_timer_get_time() +
-                                  (int64_t)s_keepalive_s * 1000000;
+            do {
+                s_keepalive_next_us += (int64_t)s_keepalive_s * 1000000;
+            } while (esp_timer_get_time() >= s_keepalive_next_us);
         }
 
         vTaskDelay(pdMS_TO_TICKS(POWER_POLL_MS));
@@ -156,6 +161,10 @@ void power_init(void)
     err = gpio_config(&last);
     if (err == ESP_OK) {
         gpio_set_level(POWER_KEEPALIVE_GPIO, 0);
+        /* Erster Impuls nach einem vollen Abstand (nicht sofort beim Start,
+         * da laeuft ohnehin gerade alles). */
+        s_keepalive_next_us = esp_timer_get_time() +
+                              (int64_t)s_keepalive_s * 1000000;
         ESP_LOGI(TAG, "Wachhalten: IO%d, Impuls %d ms alle %d s%s",
                  POWER_KEEPALIVE_GPIO, POWER_KEEPALIVE_MS, POWER_KEEPALIVE_S,
                  (POWER_KEEPALIVE_S > 0) ? "" : " (aus)");
