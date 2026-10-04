@@ -17,6 +17,7 @@
 #include "esp_log.h"
 
 #include "config.h"
+#include "battery.h"
 #include "display.h"
 #include "fuel_poll.h"
 #include "power.h"
@@ -576,6 +577,9 @@ static uint32_t bild_signatur(const fuel_prices_t *p, bool zeit_ok, bool netz_ok
      * 22:40" stehen, obwohl laengst neue Werte da sind. Geaendert wird das
      * Bild dadurch nur einmal je Abfrage (alle 5 Minuten). */
     h = h * 31u + (uint32_t)(fuel_poll_data_time() / 60);
+    /* Die Zellspannung in 10-mV-Schritten: die Anzeige soll sich beim Sinken
+     * erneuern, aber nicht bei jedem Millivolt. */
+    h = h * 31u + (uint32_t)(battery_millivolt() / 10);
     return h;
 }
 
@@ -611,22 +615,26 @@ void ui_render(const fuel_prices_t *p, bool zeit_ok, bool netz_ok)
 
     /* Kopfzeile. Links der Name der Tankstelle, mit Abstand daneben die
      * Build-Nummer - damit ist am Geraet sofort zu sehen, welcher Stand
-     * laeuft. Ganz rechts steht, wo im Verlauf man sich befindet: "jetzt"
-     * oder z. B. "-2h" / "-3T", wenn im Diagramm geblaettert wurde. */
+     * laeuft. Ganz rechts aussen steht die Zellspannung des Akkus (dauerhaft,
+     * siehe battery.c), davor die Angabe, wo im Verlauf man sich befindet:
+     * "jetzt" oder z. B. "-2h" / "-3T" nach einem Tipp. */
     char station[40];
     snprintf(station, sizeof(station), "%s", s_station);
 
     char build[12];
     snprintf(build, sizeof(build), "B%d", BUILD_NUMBER);
 
+    char batt[12];
+    battery_text(batt, sizeof(batt));
+    const int batt_x = TFT_WIDTH - 4 - (int)strlen(batt) * 6;
+
     char pos[16];
     const int verschub_stunden = s_offset * (fenster_stuendlich() ? 1 : 24);
     fmt_abstand(pos, sizeof(pos), verschub_stunden);
-    const int pos_x = TFT_WIDTH - 4 - (int)strlen(pos) * 6;
+    const int pos_x = batt_x - 8 - (int)strlen(pos) * 6;
 
-    /* Der Name darf die Build-Nummer und die Positionsangabe rechts nicht
-     * ueberfahren - notfalls wird er gekuerzt (die Build-Nummer muss
-     * sichtbar bleiben). */
+    /* Der Name darf Zeitspanne und Spannung rechts nicht ueberfahren -
+     * notfalls wird er gekuerzt (die Werte rechts muessen sichtbar bleiben). */
     int platz = (pos_x - 6 - 4 - 10 - (int)strlen(build) * 6) / 6;
     if (platz < 4) {
         platz = 4;
@@ -636,6 +644,7 @@ void ui_render(const fuel_prices_t *p, bool zeit_ok, bool netz_ok)
     }
 
     display_draw_filled_rect(0, 0, TFT_WIDTH, 10, C_BG);
+    display_draw_text(batt_x, 2, batt, C_TEXT, C_BG);
     display_draw_text(pos_x, 2, pos, s_offset > 0 ? C_ACCENT : C_TEXT_DIM, C_BG);
     display_draw_text(4, 2, station, C_TEXT, C_BG);
     display_draw_text(4 + (int)strlen(station) * 6 + 10, 2, build, C_TEXT_DIM, C_BG);

@@ -4,6 +4,7 @@ idf_component_register(
         display.c
         touch.c
         ui.c
+        battery.c
         wifi.c
         fuel_api.c
         fuel_poll.c
@@ -28,6 +29,7 @@ idf_component_register(
         esp_driver_uart
         esp_driver_sdspi
         sdmmc
+        esp_adc
         fatfs
         esp_wifi
         esp_event

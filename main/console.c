@@ -42,6 +42,7 @@
 #include "esp_heap_caps.h"
 
 #include "config.h"
+#include "battery.h"
 #include "console.h"
 #include "fuel_poll.h"
 #include "power.h"
@@ -412,6 +413,28 @@ static int cmd_keepalive(int argc, char **argv)
     return 0;
 }
 
+/* Batteriespannung zeigen. Zeigt auch die Spannung VOR dem Teiler - damit
+ * laesst sich die Beschaltung mit dem Multimeter vergleichen, ohne dass man
+ * dafuer erst rechnen muss. */
+static int cmd_batt(int argc, char **argv)
+{
+    (void)argc; (void)argv;
+
+    if (!battery_ok()) {
+        printf("Batteriemessung ist nicht eingerichtet - siehe Log (Tag 'batt')\n");
+        return 1;
+    }
+    char txt[12];
+    battery_text(txt, sizeof(txt));
+    printf("Zellspannung : %d mV  (%s)\n", battery_millivolt(), txt);
+    printf("Am Messpunkt : %d mV an IO%d\n", battery_pin_millivolt(), BATTERY_ADC_GPIO);
+    printf("Teiler       : R1=%d k / R2=%d k -> Faktor %.2f\n",
+           BATTERY_TEILER_R1, BATTERY_TEILER_R2,
+           (double)(BATTERY_TEILER_R1 + BATTERY_TEILER_R2) / BATTERY_TEILER_R2);
+    printf("Messung alle : %d s\n", BATTERY_MESS_TAKT_MS / 1000);
+    return 0;
+}
+
 static int cmd_time(int argc, char **argv)
 {
     (void)argc; (void)argv;
@@ -610,6 +633,7 @@ esp_err_t console_start(void)
     register_cmd("trend",   "trend [diesel|e5|e10]    - Trendwerte der Pfeile", cmd_trend);
     register_cmd("power",   "power [on|off]           - Stromsparmodus / Anzeige schalten", cmd_power);
     register_cmd("keepalive", "keepalive [s] [ms]     - Lastimpulse fuer das Lademodul", cmd_keepalive);
+    register_cmd("batt",    "batt                     - Batteriespannung (Zelle, Messpunkt)", cmd_batt);
     register_cmd("sim",     "sim [on|off|fill [tage]] - Simulationsmodus (Testpreise)", cmd_sim);
     register_cmd("cfg",     "cfg [import|template]    - Zugangsdaten aus SD-Datei", cmd_cfg);
     register_cmd("touch",   "touch calib on|off       - Touch-Rohwerte zum Nachmessen", cmd_touch);

@@ -23,6 +23,7 @@
 #include "esp_timer.h"
 
 #include "config.h"
+#include "battery.h"
 #include "console.h"
 #include "display.h"
 #include "fuel_poll.h"
@@ -143,6 +144,9 @@ void app_main(void)
     ESP_ERROR_CHECK(display_init());
     display_backlight(true);
     ui_init();
+
+    /* --- Batteriespannung (steht dauerhaft in der Kopfzeile) --- */
+    battery_init();
 
     /* --- Touch --- */
     if (touch_init() == ESP_OK) {

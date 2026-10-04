@@ -221,6 +221,32 @@ enum {
 #define POWER_KEEPALIVE_MS      200    /* Dauer der Zusatzlast am Pin (beim WLAN-Scan ohne Wirkung) */
 
 /* =====================================================================
+ * Batteriespannung (1S-LiIon)
+ *
+ * Gemessen wird die Zellspannung ueber einen Spannungsteiler an einem
+ * ADC1-Pin. Nur ADC1 taugt: ADC2 wird vom Funkmodul belegt, seine Werte
+ * sind bei laufendem WLAN unbrauchbar.
+ *
+ *   B+ --[R1]--+-- GPIO35 (Stecker P3: GND, IO35, IO22, IO21)
+ *              |
+ *           [100 nF]
+ *              |
+ *   B- --------+-- GND des CYD      (B- MUSS dieses GND sein - vorher messen!)
+ *
+ * R1 = R2 = 100 kOhm -> am Pin liegt die halbe Zellspannung
+ * (4,2 V Zelle -> 2,1 V), also weit im sauberen Bereich. Der Teiler zieht
+ * rund 21 uA, das ist fuer den Akku unerheblich.
+ *
+ * NIE die Zelle direkt anschliessen: 4,2 V zerstoeren einen 3,3-V-Pin.
+ * Und NICHT die 5-V-Schiene messen - dann sieht man den Booster, nicht
+ * den Ladezustand.
+ * ===================================================================== */
+#define BATTERY_ADC_GPIO        35     /* ADC1 (Kanal wird automatisch bestimmt) */
+#define BATTERY_TEILER_R1       100    /* kOhm: von B+ zum Messpunkt */
+#define BATTERY_TEILER_R2       100    /* kOhm: vom Messpunkt nach GND */
+#define BATTERY_MESS_TAKT_MS    10000  /* so oft wird neu gemessen (10 s) */
+
+/* =====================================================================
  * Simulation (sim.c)
  *
  * Solange kein API-Key vorliegt, laesst sich der Betrieb mit erfundenen,

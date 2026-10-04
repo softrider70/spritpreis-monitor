@@ -70,6 +70,15 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   (Transistor, nicht direkt - ein GPIO darf nur etwa 20 mA treiben).
   Der Abstand muss **kuerzer** sein als das Abschaltfenster des Moduls -
   das ist modulabhaengig und muss am eigenen Geraet gemessen werden.
+- `main/battery.c` misst die **Zellspannung des Akkus** ueber einen
+  Spannungsteiler an **IO35 (ADC1)**: R1 = R2 = 100 kOhm, dazu 100 nF nach GND
+  (Werte in `config.h`, `BATTERY_*`). Nur ADC1 taugt - ADC2 teilt sich der Funk.
+  Der Wert wird 16-fach gemittelt und mit der ADC-Kalibrierung aus dem eFuse
+  umgerechnet; der ESP32 kennt dabei **nur line fitting**, nicht curve fitting.
+  Gemessen wird die **Zelle** (B+/B-), nicht die 5-V-Schiene - und B- muss
+  dasselbe GND wie das CYD sein (vorher nachmessen).
+  Die Spannung steht dauerhaft rechts in der Kopfzeile, davor die
+  Positionsangabe; Konsole: `batt` (zeigt auch die Spannung am Messpunkt).
 - Anzeige ist fest auf **E10** gelegt (`FUEL_DEFAULT_INDEX`); der
   Kraftstoff-Schalter am Display ist entfallen, die Konsole kann noch
   umschalten (`fuel`).
@@ -179,6 +188,8 @@ Ohne API-Key: `sim on` und `sim fill 8` - dann kommen die Preise aus
 - [ ] Verlauf ein paar Tage laufen lassen und Diagramm ansehen
 - [ ] Impulsabstand `POWER_KEEPALIVE_S` am eigenen Lademodul messen (10 min
       ist der Ausgangswert) und den brauchbaren Wert in `config.h` eintragen
+- [ ] Spannungsteiler fuer die Zellmessung an IO35 loeten und den angezeigten
+      Wert mit dem Multimeter vergleichen (`batt` zeigt beide Spannungen)
 
 ## Messwerte am echten Geraet
 
