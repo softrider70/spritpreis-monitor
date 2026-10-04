@@ -180,6 +180,8 @@ void app_main(void)
     /* Als Wachhalte-Last fuer das Lademodul dient der Funkverkehr
      * (siehe POWER_KEEPALIVE_* in config.h). */
     power_set_lastimpuls_callback(wifi_lastimpuls);
+    /* Akku-Warnung: Die Zellspannung blinkt rot, wenn geladen werden sollte. */
+    power_set_blink_callback(ui_batt_zeichnen);
     power_init();
 
     console_start();

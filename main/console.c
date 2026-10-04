@@ -418,7 +418,13 @@ static int cmd_keepalive(int argc, char **argv)
  * dafuer erst rechnen muss. */
 static int cmd_batt(int argc, char **argv)
 {
-    (void)argc; (void)argv;
+    /* batt warn <mV> setzt die Warnschwelle (0 = Warnung aus). */
+    if (argc >= 3 && strcasecmp(argv[1], "warn") == 0) {
+        battery_warn_set(atoi(argv[2]));
+    } else if (argc >= 2 && strcasecmp(argv[1], "warn") == 0) {
+        printf("Aufruf: batt warn <mV>   (0 = Warnung aus)\n");
+        return 1;
+    }
 
     if (!battery_ok()) {
         printf("Batteriemessung ist nicht eingerichtet - siehe Log (Tag 'batt')\n");
@@ -433,6 +439,9 @@ static int cmd_batt(int argc, char **argv)
            (double)(BATTERY_TEILER_R1 + BATTERY_TEILER_R2) / BATTERY_TEILER_R2);
     printf("Korrektur    : %d / 1000%s\n", BATTERY_KORREKTUR_MILLI,
            (BATTERY_KORREKTUR_MILLI == 1000) ? " (keine)" : "");
+    printf("Warnung ab   : %d mV%s\n", battery_warn_mv(),
+           (battery_warn_mv() == 0) ? " (aus)"
+                                    : (battery_schwach() ? "  <- AKKU SCHWACH" : ""));
     printf("Messung alle : %d s\n", BATTERY_MESS_TAKT_MS / 1000);
     return 0;
 }

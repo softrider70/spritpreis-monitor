@@ -33,6 +33,10 @@ void power_set_wake_callback(void (*cb)(void));
  * zieht ohne Zusatzhardware deutlich Strom. Rueckgabe true = Impuls lief. */
 void power_set_lastimpuls_callback(bool (*cb)(void));
 
+/* Wird gerufen, wenn sich die Spannungsanzeige aendern soll (sichtbar=false
+ * laesst das Feld leer - so entsteht das Blinken der Akku-Warnung). */
+void power_set_blink_callback(void (*cb)(bool sichtbar));
+
 /* Ereignis melden: Haltezeit neu starten und die Anzeige einschalten, falls
  * sie aus war. Rueckgabe true = sie wurde geweckt und dabei schon neu
  * gezeichnet - der Aufrufer soll dann NICHT noch einmal zeichnen (sonst

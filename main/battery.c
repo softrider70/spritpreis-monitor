@@ -46,6 +46,8 @@ static bool   s_cali_ok = false;
 static int    s_pin_mv = 0;         /* zuletzt gemessene Spannung am Pin */
 static int    s_zelle_mv = 0;       /* daraus hochgerechnete Zellspannung */
 static int64_t s_messung_us = 0;    /* wann zuletzt gemessen wurde */
+static int  s_warn_mv = BATTERY_WARN_MV;   /* Schwelle fuer die Warnung */
+static bool s_schwach = false;             /* Warnung gerade aktiv? */
 
 void battery_init(void)
 {
@@ -172,4 +174,38 @@ void battery_text(char *dst, size_t len)
      * Erst runden, dann aufteilen - sonst wird aus 3999 mV "3,100 V". */
     const int mv_ger = ((mv + 5) / 10) * 10;
     snprintf(dst, len, "%d,%02d V", mv_ger / 1000, (mv_ger % 1000) / 10);
+}
+
+bool battery_schwach(void)
+{
+    const int mv = battery_millivolt();
+    if (s_warn_mv <= 0 || mv <= 0) {
+        s_schwach = false;
+        return false;
+    }
+    if (!s_schwach && mv <= s_warn_mv) {
+        s_schwach = true;
+        ESP_LOGW(TAG, "Akku schwach: %d mV (Schwelle %d mV) - bitte laden",
+                 mv, s_warn_mv);
+    } else if (s_schwach && mv >= s_warn_mv + BATTERY_WARN_HYSTERESE_MV) {
+        s_schwach = false;
+        ESP_LOGI(TAG, "Akku wieder ueber der Warnschwelle: %d mV", mv);
+    }
+    return s_schwach;
+}
+
+int battery_warn_mv(void)
+{
+    return s_warn_mv;
+}
+
+void battery_warn_set(int mv)
+{
+    if (mv < 0) {
+        mv = 0;
+    }
+    s_warn_mv = mv;
+    s_schwach = false;              /* mit der neuen Schwelle neu bewerten */
+    ESP_LOGI(TAG, "Warnschwelle auf %d mV gesetzt%s", s_warn_mv,
+             (s_warn_mv == 0) ? " (Warnung aus)" : "");
 }

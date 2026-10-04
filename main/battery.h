@@ -27,3 +27,13 @@ int battery_pin_millivolt(void);
 
 /* Fertiger Text fuer die Anzeige, z. B. "3,98 V" (ohne Messung "--,-- V"). */
 void battery_text(char *dst, size_t len);
+
+/* true, wenn der Akku geladen werden sollte. Mit Hysterese, damit ein kurzer
+ * Spannungseinbruch unter Last (Lastimpuls) keine Dauerwarnung ausloest. */
+bool battery_schwach(void);
+
+/* Aktuelle Warnschwelle in mV (0 = Warnung aus). */
+int battery_warn_mv(void);
+
+/* Warnschwelle setzen (Konsole: `batt warn <mV>`). */
+void battery_warn_set(int mv);

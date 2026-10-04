@@ -86,6 +86,14 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   Zellspannung kurz ein - eine Messung, die gerade in den Impuls faellt, zeigt
   einige 10 mV weniger. Fuer einen Korrekturwert deshalb mehrere Messungen
   vergleichen, nie eine einzelne.
+  **Akku-Warnung:** Unter `BATTERY_WARN_MV` (Vorgabe 3450 mV) wird die
+  Spannung **rot und blinkend** gezeigt - der Hinweis zu laden. Die Hysterese
+  (`BATTERY_WARN_HYSTERESE_MV`, 100 mV) verhindert, dass der kurze Einbruch
+  waehrend eines Lastimpulses die Warnung dauernd an- und ausgehen laesst.
+  Tritt die Warnung neu auf, wird die Anzeige geweckt; danach blinkt nur das
+  Spannungsfeld (`ui_batt_zeichnen`, alle 0,5 s) - kein voller Bildaufbau.
+  Einstellen ohne Neubauen: `batt warn <mV>` (0 = aus); `batt` und `power`
+  zeigen Zustand, Schwelle und Blinktakte.
 - Anzeige ist fest auf **E10** gelegt (`FUEL_DEFAULT_INDEX`); der
   Kraftstoff-Schalter am Display ist entfallen, die Konsole kann noch
   umschalten (`fuel`).

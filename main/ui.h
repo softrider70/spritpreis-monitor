@@ -67,6 +67,11 @@ void ui_render(const fuel_prices_t *p, bool zeit_ok, bool netz_ok);
  * langsam und mehrfach sichtbar (Flackern). */
 void ui_render_chart(void);
 
+/* Nur das Spannungsfeld in der Kopfzeile zeichnen bzw. leer lassen - fuer das
+ * Blinken der Akku-Warnung. Ein voller Bildaufbau waere dafuer zu aufwendig
+ * und wuerde sichtbar flackern. */
+void ui_batt_zeichnen(bool sichtbar);
+
 /* Touch-Ereignisse */
 void ui_touch_tap(int x, int y);
 

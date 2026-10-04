@@ -246,6 +246,25 @@ void ui_render_chart(void)
     if (s_ui_lock) xSemaphoreGive(s_ui_lock);
 }
 
+/* Das Spannungsfeld in der Kopfzeile neu zeichnen (oder leer lassen).
+ * Wird fuer das Blinken der Akku-Warnung gebraucht: nur dieses kleine Feld,
+ * nicht das ganze Bild. */
+void ui_batt_zeichnen(bool sichtbar)
+{
+    if (s_ui_lock) xSemaphoreTake(s_ui_lock, portMAX_DELAY);
+    if (power_display_on() && !s_msg_da) {
+        const int batt_x = TFT_WIDTH - 4 - 8 * 6;
+        display_draw_filled_rect(batt_x - 2, 0, TFT_WIDTH - (batt_x - 2), 10, C_BG);
+        if (sichtbar) {
+            char batt[12];
+            battery_text(batt, sizeof(batt));
+            display_draw_text(batt_x, 2, batt,
+                              battery_schwach() ? C_BAD : C_TEXT, C_BG);
+        }
+    }
+    if (s_ui_lock) xSemaphoreGive(s_ui_lock);
+}
+
 /* Tiefster und hoechster Wert im sichtbaren Fenster - dieselben Grenzen, die
  * das Diagramm als Balken zeigt. 0 bedeutet "kein Wert vorhanden". */
 static void fenster_bereich(int *tief, int *hoch)
@@ -624,9 +643,12 @@ void ui_render(const fuel_prices_t *p, bool zeit_ok, bool netz_ok)
     char build[12];
     snprintf(build, sizeof(build), "B%d", BUILD_NUMBER);
 
+    /* Feste Breite fuer das Spannungsfeld (8 Zeichen = "3,75 V" bzw.
+     * "--,-- V"): So bleibt die Position stabil, und beim Blinken laesst sich
+     * der Bereich sauber leeren, ohne die Zeitspanne links anzukratzen. */
     char batt[12];
     battery_text(batt, sizeof(batt));
-    const int batt_x = TFT_WIDTH - 4 - (int)strlen(batt) * 6;
+    const int batt_x = TFT_WIDTH - 4 - 8 * 6;
 
     char pos[16];
     const int verschub_stunden = s_offset * (fenster_stuendlich() ? 1 : 24);
@@ -644,7 +666,7 @@ void ui_render(const fuel_prices_t *p, bool zeit_ok, bool netz_ok)
     }
 
     display_draw_filled_rect(0, 0, TFT_WIDTH, 10, C_BG);
-    display_draw_text(batt_x, 2, batt, C_TEXT, C_BG);
+    display_draw_text(batt_x, 2, batt, battery_schwach() ? C_BAD : C_TEXT, C_BG);
     display_draw_text(pos_x, 2, pos, s_offset > 0 ? C_ACCENT : C_TEXT_DIM, C_BG);
     display_draw_text(4, 2, station, C_TEXT, C_BG);
     display_draw_text(4 + (int)strlen(station) * 6 + 10, 2, build, C_TEXT_DIM, C_BG);

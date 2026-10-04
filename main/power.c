@@ -33,6 +33,7 @@
 #include "esp_log.h"
 
 #include "config.h"
+#include "battery.h"
 #include "display.h"
 #include "power.h"
 
@@ -49,6 +50,11 @@ static bool     s_irq_usable = false;      /* Touch-IRQ als Wecker nutzbar? */
 static int      s_wake_pin = -1;           /* Pin, der den Sleep beendet */
 static void   (*s_wake_cb)(void) = NULL;
 static bool   (*s_lastimpuls_cb)(void) = NULL;   /* Last ueber Funk (WLAN-Scan) */
+static void   (*s_blink_cb)(bool) = NULL;        /* Spannungsfeld neu zeichnen */
+static bool     s_schwach_vorher = false;        /* Akkuwarnung war schon aktiv? */
+static bool     s_blink_an = false;              /* Blinkzustand der Warnung */
+static int64_t  s_blink_us = 0;
+static uint32_t s_blink_takte = 0;               /* wie oft umgeschaltet */
 static uint32_t s_keepalive_impulse = 0;   /* Anzahl der Lastimpulse */
 static int      s_keepalive_s  = POWER_KEEPALIVE_S;    /* Abstand in Sekunden */
 static int      s_keepalive_ms = POWER_KEEPALIVE_MS;   /* Impulsdauer in ms */
@@ -143,6 +149,30 @@ static void power_task(void *arg)
             do {
                 s_keepalive_next_us += (int64_t)s_keepalive_s * 1000000;
             } while (esp_timer_get_time() >= s_keepalive_next_us);
+        }
+
+        /* Akku schwach? Dann die Zellspannung rot blinken lassen. Tritt die
+         * Warnung neu auf, wird die Anzeige geweckt - sonst sieht man sie im
+         * Stromsparmodus nie (das Display ist dann schwarz). */
+        const bool schwach = battery_schwach();
+        if (schwach && !s_schwach_vorher) {
+            power_activity();
+        }
+        s_schwach_vorher = schwach;
+
+        if (s_on && s_blink_cb) {
+            const int64_t jetzt_us = esp_timer_get_time();
+            if (schwach) {
+                if ((jetzt_us - s_blink_us) >= 500000) {   /* 0,5 s umschalten */
+                    s_blink_us = jetzt_us;
+                    s_blink_an = !s_blink_an;
+                    s_blink_takte++;
+                    s_blink_cb(s_blink_an);
+                }
+            } else if (s_blink_an) {
+                s_blink_an = false;
+                s_blink_cb(true);          /* wieder normal zeichnen */
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(POWER_POLL_MS));
@@ -286,6 +316,11 @@ void power_set_lastimpuls_callback(bool (*cb)(void))
     s_lastimpuls_cb = cb;
 }
 
+void power_set_blink_callback(void (*cb)(bool sichtbar))
+{
+    s_blink_cb = cb;
+}
+
 bool power_activity(void)
 {
     s_activity++;
@@ -348,6 +383,9 @@ void power_print_status(void)
     }
     printf("Impulse      : %u seit dem Start\n",
            (unsigned)s_keepalive_impulse);
+    printf("Akkuwarnung  : %s (Schwelle %d mV, Blinktakte %u)\n",
+           battery_schwach() ? "AKTIV - bitte laden" : "aus",
+           battery_warn_mv(), (unsigned)s_blink_takte);
     printf("Ereignisse   : %u seit dem Start\n", (unsigned)s_activity);
 }
 

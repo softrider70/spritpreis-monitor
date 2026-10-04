@@ -246,6 +246,17 @@ enum {
 #define BATTERY_TEILER_R2       100    /* kOhm: vom Messpunkt nach GND */
 #define BATTERY_MESS_TAKT_MS    10000  /* so oft wird neu gemessen (10 s) */
 
+/* Warnschwelle: Darunter wird die Zellspannung rot angezeigt und blinkt -
+ * der Hinweis, den Akku zu laden. 3450 mV sind etwa ein Fuenftel Restladung.
+ *
+ * Die Hysterese verhindert eine Dauerwarnung: Die Spannung bricht waehrend
+ * des Lastimpulses (WLAN-Scan) kurz ein, ohne Hysterese wuerde die Warnung
+ * staendig an- und wieder ausgehen. Zurueckgenommen wird sie erst oberhalb
+ * von BATTERY_WARN_MV + BATTERY_WARN_HYSTERESE_MV.
+ * Zur Laufzeit einstellen: `batt warn <mV>` (0 schaltet die Warnung aus). */
+#define BATTERY_WARN_MV         3450
+#define BATTERY_WARN_HYSTERESE_MV 100
+
 /* Feinkorrektur gegen das Multimeter. Angezeigt wird
  *   U_zelle = U_pin * (R1+R2)/R2 * BATTERY_KORREKTUR_MILLI / 1000
  * 1000 = keine Korrektur (Vorgabe).
