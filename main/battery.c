@@ -168,5 +168,8 @@ void battery_text(char *dst, size_t len)
         snprintf(dst, len, "--,-- V");
         return;
     }
-    snprintf(dst, len, "%d,%02d V", mv / 1000, (mv % 1000) / 10);
+    /* Auf 10 mV runden, nicht abschneiden: 3749 mV soll "3,75 V" ergeben.
+     * Erst runden, dann aufteilen - sonst wird aus 3999 mV "3,100 V". */
+    const int mv_ger = ((mv + 5) / 10) * 10;
+    snprintf(dst, len, "%d,%02d V", mv_ger / 1000, (mv_ger % 1000) / 10);
 }

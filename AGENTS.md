@@ -79,6 +79,13 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   dasselbe GND wie das CYD sein (vorher nachmessen).
   Die Spannung steht dauerhaft rechts in der Kopfzeile, davor die
   Positionsangabe; Konsole: `batt` (zeigt auch die Spannung am Messpunkt).
+  **Am Geraet geprueft (2026-10-04):** Anzeige 3748 mV gegen Multimeter
+  3,75 V - Abweichung wenige Millivolt, kein Korrekturwert noetig
+  (`BATTERY_KORREKTUR_MILLI` bleibt 1000).
+  **Achtung:** Waehrend eines Lastimpulses (WLAN-Scan, `power.c`) bricht die
+  Zellspannung kurz ein - eine Messung, die gerade in den Impuls faellt, zeigt
+  einige 10 mV weniger. Fuer einen Korrekturwert deshalb mehrere Messungen
+  vergleichen, nie eine einzelne.
 - Anzeige ist fest auf **E10** gelegt (`FUEL_DEFAULT_INDEX`); der
   Kraftstoff-Schalter am Display ist entfallen, die Konsole kann noch
   umschalten (`fuel`).

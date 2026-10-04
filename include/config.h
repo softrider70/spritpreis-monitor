@@ -256,8 +256,16 @@ enum {
  *   1. Zellspannung mit dem Multimeter messen (Referenz).
  *   2. `batt` auf der Konsole aufrufen und die angezeigte Zellspannung lesen.
  *   3. Faktor = 1000 * (Multimeterwert / angezeigter Wert), hier eintragen.
- * Beispiel: Multimeter 3,763 V, Anzeige 3,720 V -> 1012. */
-#define BATTERY_KORREKTUR_MILLI 1000
+ * Beispiel: Multimeter 3,763 V, Anzeige 3,720 V -> 1012.
+ *
+ * ACHTUNG bei der Bestimmung: Die Messung schwankt von Abruf zu Abruf um
+ * einige Millivolt (am Geraet gemessen: 1880 / 1876 mV am Pin = 8 mV an der
+ * Zelle). Ein Faktor aus EINER Vergleichsmessung stellt die Anzeige deshalb
+ * nicht besser, sondern nur anders daneben - erst mehrere Messungen bei
+ * verschiedenen Zellspannungen mitteln und dann rechnen. Auch das Multimeter
+ * hat eine Toleranz (guenstige Geraete rund 0,5 % = 19 mV bei 3,75 V), die
+ * groesser sein kann als die Abweichung, die man ausgleichen will. */
+#define BATTERY_KORREKTUR_MILLI 1000   /* 1000 = keine Korrektur (Vorgabe) */
 
 /* =====================================================================
  * Simulation (sim.c)
