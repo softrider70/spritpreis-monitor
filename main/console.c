@@ -431,6 +431,8 @@ static int cmd_batt(int argc, char **argv)
     printf("Teiler       : R1=%d k / R2=%d k -> Faktor %.2f\n",
            BATTERY_TEILER_R1, BATTERY_TEILER_R2,
            (double)(BATTERY_TEILER_R1 + BATTERY_TEILER_R2) / BATTERY_TEILER_R2);
+    printf("Korrektur    : %d / 1000%s\n", BATTERY_KORREKTUR_MILLI,
+           (BATTERY_KORREKTUR_MILLI == 1000) ? " (keine)" : "");
     printf("Messung alle : %d s\n", BATTERY_MESS_TAKT_MS / 1000);
     return 0;
 }

@@ -129,6 +129,9 @@ static void messen(void)
     /* Teiler: U_zelle = U_pin * (R1 + R2) / R2 */
     s_zelle_mv = (int)((int32_t)s_pin_mv * (BATTERY_TEILER_R1 + BATTERY_TEILER_R2)
                        / BATTERY_TEILER_R2);
+    /* Feinkorrektur gegen das Multimeter (config.h). Der Teiler selbst ist
+     * damit nicht gemeint - der stimmt, wenn R1 und R2 stimmen. */
+    s_zelle_mv = (int)((int32_t)s_zelle_mv * BATTERY_KORREKTUR_MILLI / 1000);
     s_messung_us = esp_timer_get_time();
 }
 

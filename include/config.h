@@ -246,6 +246,19 @@ enum {
 #define BATTERY_TEILER_R2       100    /* kOhm: vom Messpunkt nach GND */
 #define BATTERY_MESS_TAKT_MS    10000  /* so oft wird neu gemessen (10 s) */
 
+/* Feinkorrektur gegen das Multimeter. Angezeigt wird
+ *   U_zelle = U_pin * (R1+R2)/R2 * BATTERY_KORREKTUR_MILLI / 1000
+ * 1000 = keine Korrektur (Vorgabe).
+ *
+ * Fuer den Teiler ist das NICHT gedacht - der stimmt, wenn R1/R2 stimmen
+ * (nachgerechnet: 3,763 V Zelle bei 1,883 V am Pin = 0,08 % Abweichung).
+ * Der Wert gleicht nur die Streuung des ADC aus. Bestimmen:
+ *   1. Zellspannung mit dem Multimeter messen (Referenz).
+ *   2. `batt` auf der Konsole aufrufen und die angezeigte Zellspannung lesen.
+ *   3. Faktor = 1000 * (Multimeterwert / angezeigter Wert), hier eintragen.
+ * Beispiel: Multimeter 3,763 V, Anzeige 3,720 V -> 1012. */
+#define BATTERY_KORREKTUR_MILLI 1000
+
 /* =====================================================================
  * Simulation (sim.c)
  *
