@@ -1,0 +1,9 @@
+{
+    // Empfohlene Erweiterungen fuer dieses Projekt
+    "recommendations": [
+        // DeepSeek V4 in Copilot Chat (Modellauswahl: Pro / Flash / Flash Vision)
+        "vizards.deepseek-v4-for-copilot",
+        // DeepSeek-Guthaben in der Statusleiste
+        "pantsari.deepseek-credit-status"
+    ]
+}
