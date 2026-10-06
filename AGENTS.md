@@ -94,6 +94,16 @@ ansicht, verschiebbar). Ziel: besseres Gefuehl dafuer, wann tanken lohnt.
   Spannungsfeld (`ui_batt_zeichnen`, alle 0,5 s) - kein voller Bildaufbau.
   Einstellen ohne Neubauen: `batt warn <mV>` (0 = aus); `batt` und `power`
   zeigen Zustand, Schwelle und Blinktakte.
+- **Stromversorgung am Akku (Stand 2026-10-06):** Lader ist ein **HW-168**
+  (TP4056, nur 4 Anschluesse = **ohne Schutzplatine**). Akku und Step-Up
+  haengen daher zwangslaeufig parallel an B+/B- - der Booster zieht die Zelle
+  bis zur Tiefentladung leer (am 2026-10-06 nur noch 2,27 V).
+  Dazu: Der TP4056 laedt unter etwa 2,9 V nur mit Trickle-Strom (rund 100 mA),
+  das reicht gegen eine laufende Last nicht - die Zelle sinkt trotz "Laden".
+  Abhilfe (eine von beiden): Schutzplatine zwischen Zelle und Booster
+  (Zelle an B+/B-, Verbraucher an P+/P-) oder zurueck zum weissen
+  Powerbank-Modul mit 5-V-Ausgang, das den Lastimpuls aus `power.c` braucht.
+  Details: Skill `cyd-display`.
 - Anzeige ist fest auf **E10** gelegt (`FUEL_DEFAULT_INDEX`); der
   Kraftstoff-Schalter am Display ist entfallen, die Konsole kann noch
   umschalten (`fuel`).
